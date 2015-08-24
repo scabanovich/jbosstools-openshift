@@ -35,6 +35,7 @@ import org.jboss.tools.openshift.internal.ui.OpenShiftUIActivator;
 import org.jboss.tools.openshift.internal.ui.explorer.ResourceGrouping;
 import org.jboss.tools.openshift.internal.ui.job.CreateApplicationFromTemplateJob;
 import org.jboss.tools.openshift.internal.ui.job.RefreshResourcesJob;
+import org.jboss.tools.openshift.internal.ui.wizard.common.ResourceLabelsPage;
 
 import com.openshift.restclient.model.IResource;
 

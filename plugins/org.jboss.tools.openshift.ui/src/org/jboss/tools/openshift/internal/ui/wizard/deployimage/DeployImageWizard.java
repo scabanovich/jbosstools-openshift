@@ -35,7 +35,7 @@ import org.jboss.tools.openshift.internal.ui.OpenShiftUIActivator;
 import org.jboss.tools.openshift.internal.ui.explorer.ResourceGrouping;
 import org.jboss.tools.openshift.internal.ui.job.CreateApplicationFromTemplateJob;
 import org.jboss.tools.openshift.internal.ui.job.RefreshResourcesJob;
-import org.jboss.tools.openshift.internal.ui.wizard.newapp.ResourceLabelsPage;
+import org.jboss.tools.openshift.internal.ui.wizard.common.ResourceLabelsPage;
 
 import com.openshift.restclient.model.IResource;
 
@@ -85,8 +85,8 @@ public class DeployImageWizard extends Wizard implements IWorkbenchWizard {
 	@Override
 	public void addPages() {
 		addPage(new DeployImagePage(this, model));
-		addPage(new DeploymentConfigPage(this, null));
-		addPage(new ResourceLabelsPage(this, null));
+		addPage(new DeploymentConfigPage(this, model));
+		addPage(new ResourceLabelsPage(this, model));
 //		addPage(new TemplateParametersPage(this, model));
 //		addPage(new DeploymentConfigPage(this, model));
 	}

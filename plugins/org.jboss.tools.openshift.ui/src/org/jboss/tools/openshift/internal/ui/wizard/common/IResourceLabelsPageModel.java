@@ -6,7 +6,7 @@
  *
  * Contributors: Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.openshift.internal.ui.wizard.newapp;
+package org.jboss.tools.openshift.internal.ui.wizard.common;
 
 import java.util.Collection;
 import java.util.List;

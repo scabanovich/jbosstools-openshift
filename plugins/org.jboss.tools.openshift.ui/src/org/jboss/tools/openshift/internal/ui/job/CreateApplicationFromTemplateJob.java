@@ -17,7 +17,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.jboss.tools.openshift.internal.common.core.job.AbstractDelegatingMonitorJob;
 import org.jboss.tools.openshift.internal.ui.OpenShiftUIActivator;
-import org.jboss.tools.openshift.internal.ui.wizard.newapp.IResourceLabelsPageModel.Label;
+import org.jboss.tools.openshift.internal.ui.wizard.common.IResourceLabelsPageModel.Label;
 
 import com.openshift.restclient.IClient;
 import com.openshift.restclient.OpenShiftException;
