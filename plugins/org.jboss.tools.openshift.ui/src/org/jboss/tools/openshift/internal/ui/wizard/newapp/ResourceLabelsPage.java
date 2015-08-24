@@ -63,7 +63,7 @@ public class ResourceLabelsPage extends AbstractOpenShiftWizardPage {
 	private IResourceLabelsPageModel model;
 	private TableViewer viewer;
 
-	protected ResourceLabelsPage(IWizard wizard, IResourceLabelsPageModel model) {
+	public ResourceLabelsPage(IWizard wizard, IResourceLabelsPageModel model) {
 		super("Resource Labels", PAGE_DESCRIPTION, "Resource Labels Page", wizard);
 		this.model = model;
 	}

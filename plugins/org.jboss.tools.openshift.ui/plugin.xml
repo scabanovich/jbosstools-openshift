@@ -357,6 +357,38 @@
 		      </visibleWhen>
 		   </command>
   </menuContribution>
+  <menuContribution
+        allPopups="false"
+        locationURI="popup:org.eclipse.linuxtools.docker.ui.dockerExplorerView#PopupMenu?before=group.run">
+     <separator
+           name="org.jboss.tools.openshift.ui.separator.docker.explorer"
+           visible="true">
+     </separator>
+     <command
+           commandId="org.jboss.tools.openshift.ui.command.deployimage"
+           icon="icons/openshift-logo-white-icon.png"
+           id="org.jboss.tools.openshift.ui.docker.explorer.deploy"
+           style="push">
+        <visibleWhen
+              checkEnabled="false">
+           <with
+                 variable="selection">
+              <and>
+                 <count
+                       value="1">
+                 </count>
+                 <iterate
+                       ifEmpty="false"
+                       operator="and">
+                    <instanceof
+                          value="org.eclipse.linuxtools.docker.core.IDockerImage">
+                    </instanceof>
+                 </iterate>
+              </and>
+           </with>
+        </visibleWhen>
+     </command>
+  </menuContribution>
 	</extension>
 	<extension
 		point="org.eclipse.ui.handlers">
@@ -404,6 +436,10 @@
 			class="org.jboss.tools.openshift.internal.ui.handler.ShowPropertiesHandler"
 			commandId="org.jboss.tools.openshift.ui.command.showproperties">
 		</handler>
+  <handler
+        class="org.jboss.tools.openshift.internal.ui.handler.DeployImageHandler"
+        commandId="org.jboss.tools.openshift.ui.command.deployimage">
+  </handler>
 	</extension>
 	<!-- adapters -->
 	<extension
@@ -499,6 +535,10 @@
 			id="org.jboss.tools.openshift.ui.command.showproperties"
 			name="%openshift.command.showproperties">
 		</command>
+  <command
+        id="org.jboss.tools.openshift.ui.command.deployimage"
+        name="%openshift.command.application.deployimage">
+  </command>
 	</extension>
 
 	<!-- editor for express connections -->
