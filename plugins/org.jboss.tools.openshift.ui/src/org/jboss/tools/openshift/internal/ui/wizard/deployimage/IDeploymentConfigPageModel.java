@@ -32,4 +32,19 @@ public interface IDeploymentConfigPageModel {
 	
 	Set<String> getPortSpecs();
 	
+	/**
+	 * The number of replicas to define in the deployment config.
+	 * This is scalability factor;
+	 * @return
+	 */
+	int getReplicas();
+	
+	/**
+	 * The number of replicas to define in the deployment config.
+	 * This is scalability factor;
+
+	 * @param replicas  a number of 1 or more replicas
+	 */
+	void setReplicas(int replicas);
+	
 }

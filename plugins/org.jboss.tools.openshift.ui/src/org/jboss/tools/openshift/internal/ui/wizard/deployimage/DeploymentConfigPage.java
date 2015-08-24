@@ -35,6 +35,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Table;
 import org.jboss.tools.common.ui.databinding.ValueBindingBuilder;
 import org.jboss.tools.openshift.internal.common.ui.utils.TableViewerBuilder;
@@ -56,15 +57,15 @@ import org.jboss.tools.openshift.internal.ui.validator.LabelValueValidator;
  */
 public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 
-	private static final String LABEL = "Label";
-	private static final String RESOURCE_LABEL = "Resource Label";
-	private static final String PAGE_DESCRIPTION = "add something here";
+	private static final String PAGE_NAME = "Deployment Config Settings Page";
+	private static final String PAGE_TITLE = "Deployment Configuration & Scalability";
+	private static final String PAGE_DESCRIPTION = "";
 
 	private IDeploymentConfigPageModel model;
 	private TableViewer envViewer;
 
 	protected DeploymentConfigPage(IWizard wizard, IDeploymentConfigPageModel model) {
-		super("Deployment Config Settings", PAGE_DESCRIPTION, "Deployment Config Settings Page", wizard);
+		super(PAGE_TITLE, PAGE_DESCRIPTION, PAGE_NAME, wizard);
 		this.model = model;
 	}
 
@@ -74,6 +75,25 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 
 		//Env Variables Block
 		createEnvVariableControl(parent, dbc);
+		createDataVolumeControl(parent, dbc);
+		
+		//Scaling
+		Composite scalingContainer = new Composite(parent, SWT.NONE);
+		GridDataFactory.fillDefaults()
+			.align(SWT.FILL, SWT.FILL).grab(true, true).applyTo(scalingContainer);
+		GridLayoutFactory.fillDefaults()
+			.numColumns(2).margins(6, 6).applyTo(scalingContainer);
+		
+		Label lblReplicas = new Label(scalingContainer, SWT.NONE);
+		lblReplicas.setText("Replicas:");
+		GridDataFactory.fillDefaults()
+			.applyTo(lblReplicas);
+		
+		Spinner replicas = new Spinner(scalingContainer, SWT.BORDER);
+		replicas.setMinimum(1);
+		GridDataFactory.fillDefaults()
+			.align(SWT.FILL, SWT.FILL)
+			.applyTo(replicas);
 	}
 	
 	
@@ -105,13 +125,13 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 		Button addButton = new Button(envContainer, SWT.PUSH);
 		GridDataFactory.fillDefaults()
 			.align(SWT.FILL, SWT.FILL).applyTo(addButton);
-		addButton.setText("Add");
+		addButton.setText("Add...");
 		addButton.addSelectionListener(onAdd());
 		
 		Button editExistingButton = new Button(envContainer, SWT.PUSH);
 		GridDataFactory.fillDefaults()
 			.align(SWT.FILL, SWT.FILL).applyTo(editExistingButton);
-		editExistingButton.setText("Edit");
+		editExistingButton.setText("Edit...");
 		editExistingButton.addSelectionListener(onEdit());
 //		ValueBindingBuilder
 //				.bind(WidgetProperties.enabled().observe(editExistingButton))
@@ -134,6 +154,40 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 		
 	}
 	
+	private void createDataVolumeControl(Composite parent, DataBindingContext dbc) {
+		Composite sectionContainer = new Composite(parent, SWT.NONE);
+		GridDataFactory.fillDefaults()
+			.align(SWT.FILL, SWT.FILL).grab(true, true).applyTo(sectionContainer);
+		GridLayoutFactory.fillDefaults()
+			.numColumns(2).margins(6, 6).applyTo(sectionContainer);
+		
+		Label lblSection = new Label(sectionContainer, SWT.NONE);
+		lblSection.setText("Data volumes:");
+		GridDataFactory.fillDefaults()
+			.align(SWT.FILL, SWT.FILL)
+			.span(2,1)
+			.applyTo(lblSection);
+		Composite tableContainer = new Composite(sectionContainer, SWT.NONE);
+		
+		createDataVolumeTable(tableContainer);
+		GridDataFactory.fillDefaults()
+			.span(1, 5).align(SWT.FILL, SWT.FILL).grab(true, true).applyTo(tableContainer);
+//		ValueBindingBuilder.bind(ViewerProperties.singleSelection().observe(envViewer))
+//				.to(BeanProperties.value(IResourceLabelsPageModel.PROPERTY_SELECTED_LABEL).observe(model))
+//				.in(dbc);
+//		envViewer.setContentProvider(new ObservableListContentProvider());
+//		envViewer.setInput(BeanProperties.list(
+//				IResourceLabelsPageModel.PROPERTY_LABELS).observe(model));
+		
+		Button btnEdit = new Button(sectionContainer, SWT.PUSH);
+		GridDataFactory.fillDefaults()
+			.align(SWT.FILL, SWT.FILL).applyTo(btnEdit);
+		btnEdit.setText("Edit...");
+//		addButton.addSelectionListener(onAdd());
+		
+	}
+	
+
 	private SelectionListener onRemove() {
 		return new SelectionAdapter() {
 
@@ -217,6 +271,43 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 						return label.getValue();
 					}
 				
+				})
+				.name("Value").align(SWT.LEFT).weight(2).minWidth(100).buildColumn()
+				.buildViewer();
+//		envViewer.setComparator(new ViewerComparator() {
+//
+//			@Override
+//			public int compare(Viewer viewer, Object e1, Object e2) {
+//				Label first = (Label) e1;
+//				Label other = (Label) e2;
+//				return first.getName().compareTo(other.getName());
+//			}
+//			
+//		});
+		return envViewer;
+	}
+
+	protected TableViewer createDataVolumeTable(Composite tableContainer) {
+		Table table =
+				new Table(tableContainer, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		table.setLinesVisible(true);
+		table.setHeaderVisible(true);
+		this.envViewer = new TableViewerBuilder(table, tableContainer)
+				.contentProvider(new ArrayContentProvider())
+				.column(new IColumnLabelProvider<Map.Entry<String, String>>() {
+					@Override
+					public String getValue(Map.Entry<String, String> label) {
+						return label.getKey();
+					}
+				})
+				.name("Name").align(SWT.LEFT).weight(2).minWidth(100).buildColumn()
+				.column(new IColumnLabelProvider<Map.Entry<String, String>>() {
+					
+					@Override
+					public String getValue(Map.Entry<String, String> label) {
+						return label.getValue();
+					}
+					
 				})
 				.name("Value").align(SWT.LEFT).weight(2).minWidth(100).buildColumn()
 				.buildViewer();
