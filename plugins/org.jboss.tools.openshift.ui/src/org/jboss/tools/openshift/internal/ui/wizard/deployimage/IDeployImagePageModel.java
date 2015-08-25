@@ -13,6 +13,7 @@ package org.jboss.tools.openshift.internal.ui.wizard.deployimage;
 import java.util.Collection;
 
 import org.jboss.tools.openshift.core.connection.Connection;
+import org.jboss.tools.openshift.internal.common.ui.wizard.IConnectionAware;
 
 import com.openshift.restclient.model.IProject;
 
@@ -21,10 +22,9 @@ import com.openshift.restclient.model.IProject;
  * @author jeff.cantrill
  *
  */
-public interface IDeployImagePageModel {
+public interface IDeployImagePageModel extends IConnectionAware<Connection>{
 
 	String PROPERTY_CONNECTIONS = "connections";
-	String PROPERTY_CONNECTION = "connection";
 	String PROPERTY_PROJECTS = "projects";
 	String PROPERTY_PROJECT = "project";
 	String PROPERTY_NAME = "name";
@@ -35,9 +35,6 @@ public interface IDeployImagePageModel {
 	 * @return
 	 */
 	Collection<Connection> getConnections();
-	
-	Connection getConnection();
-	void setConnection(Connection connection);
 	
 	Collection<IProject> getProjects();
 	

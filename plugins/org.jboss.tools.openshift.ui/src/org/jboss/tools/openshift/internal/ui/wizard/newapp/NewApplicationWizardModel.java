@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang.ObjectUtils;
 import org.jboss.tools.openshift.core.connection.Connection;
-import org.jboss.tools.openshift.internal.common.ui.wizard.IConnectionAware;
 import org.jboss.tools.openshift.internal.ui.treeitem.ObservableTreeItem;
 import org.jboss.tools.openshift.internal.ui.wizard.common.ResourceLabelsPageModel;
 
@@ -44,7 +43,7 @@ import com.openshift.restclient.model.template.ITemplate;
  */
 public class NewApplicationWizardModel 
 		extends ResourceLabelsPageModel 
-		implements IResourceDetailsModel, ITemplateListPageModel, ITemplateParametersPageModel, IConnectionAware<Connection> {
+		implements IResourceDetailsModel, ITemplateListPageModel, ITemplateParametersPageModel{
 
 	private Connection connection;
 	private IProject project;

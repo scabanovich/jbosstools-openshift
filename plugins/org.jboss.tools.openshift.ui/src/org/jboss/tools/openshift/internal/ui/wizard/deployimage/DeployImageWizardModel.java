@@ -19,6 +19,7 @@ import java.util.Set;
 import org.jboss.tools.common.databinding.ObservablePojo;
 import org.jboss.tools.openshift.common.core.connection.ConnectionsRegistrySingleton;
 import org.jboss.tools.openshift.core.connection.Connection;
+import org.jboss.tools.openshift.internal.common.ui.wizard.IConnectionAware;
 import org.jboss.tools.openshift.internal.ui.wizard.common.IResourceLabelsPageModel;
 import org.jboss.tools.openshift.internal.ui.wizard.common.ResourceLabelsPageModel;
 
@@ -32,7 +33,7 @@ import com.openshift.restclient.model.IProject;
  */
 public class DeployImageWizardModel 
 		extends ResourceLabelsPageModel 
-		implements IDeployImagePageModel, IDeploymentConfigPageModel{
+		implements IDeployImagePageModel, IDeploymentConfigPageModel, IServiceAndRoutingPageModel{
 
 	private Connection connection;
 	private IProject project;
@@ -55,12 +56,13 @@ public class DeployImageWizardModel
 	}
 
 	@Override
-	public void setConnection(Connection connection) {
+	public Connection setConnection(Connection connection) {
 		firePropertyChange(PROPERTY_CONNECTION, this.connection, this.connection = connection);
 		if(this.connection != null) {
 			List<IProject> projects = connection.getResources(ResourceKind.PROJECT);
 			setProjects(projects);
 		}
+		return this.connection;
 	}
 
 	private void setProjects(List<IProject> projects) {
@@ -150,6 +152,35 @@ public class DeployImageWizardModel
 
 	@Override
 	public void setReplicas(int replicas) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean hasConnection() {
+		return this.connection != null;
+	}
+
+	@Override
+	public Object getContext() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getRoute() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean isAddRoute() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void setAddRoute(boolean addRoute) {
 		// TODO Auto-generated method stub
 		
 	}

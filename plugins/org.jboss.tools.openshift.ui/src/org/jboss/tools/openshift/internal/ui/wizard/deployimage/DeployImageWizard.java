@@ -87,8 +87,7 @@ public class DeployImageWizard extends Wizard implements IWorkbenchWizard {
 		addPage(new DeployImagePage(this, model));
 		addPage(new DeploymentConfigPage(this, model));
 		addPage(new ResourceLabelsPage(this, model));
-//		addPage(new TemplateParametersPage(this, model));
-//		addPage(new DeploymentConfigPage(this, model));
+		addPage(new ServicesAndRoutingPage(this, model));
 	}
 
 	@Override
