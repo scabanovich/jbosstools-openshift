@@ -10,6 +10,10 @@
  ******************************************************************************/
 package org.jboss.tools.openshift.internal.ui.wizard.deployimage;
 
+import java.util.List;
+
+import com.openshift.restclient.model.IServicePort;
+
 /**
  * 
  * @author jeff.cantrill
@@ -19,9 +23,9 @@ public interface IServiceAndRoutingPageModel {
 
 	static final String PROPERTY_ADD_ROUTE = "addRoute";
 	
-	String getRoute();
-	
 	boolean isAddRoute();
 	
 	void setAddRoute(boolean addRoute);
+	
+	List<IServicePort> getServicePorts();
 }

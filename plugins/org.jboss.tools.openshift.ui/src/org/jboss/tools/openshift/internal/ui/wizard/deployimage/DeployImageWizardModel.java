@@ -25,6 +25,7 @@ import org.jboss.tools.openshift.internal.ui.wizard.common.ResourceLabelsPageMod
 
 import com.openshift.restclient.ResourceKind;
 import com.openshift.restclient.model.IProject;
+import com.openshift.restclient.model.IServicePort;
 
 /**
  * The Wizard model to support deploying an image to OpenShift
@@ -168,12 +169,6 @@ public class DeployImageWizardModel
 	}
 
 	@Override
-	public String getRoute() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public boolean isAddRoute() {
 		// TODO Auto-generated method stub
 		return false;
@@ -184,5 +179,12 @@ public class DeployImageWizardModel
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public List<IServicePort> getServicePorts() {
+		return null;
+	}
+	
+	
 
 }

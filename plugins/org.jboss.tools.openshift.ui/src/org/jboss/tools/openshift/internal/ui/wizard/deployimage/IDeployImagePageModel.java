@@ -12,9 +12,11 @@ package org.jboss.tools.openshift.internal.ui.wizard.deployimage;
 
 import java.util.Collection;
 
+import org.eclipse.linuxtools.docker.core.IDockerConnection;
 import org.jboss.tools.openshift.core.connection.Connection;
 import org.jboss.tools.openshift.internal.common.ui.wizard.IConnectionAware;
 
+import com.openshift.restclient.images.DockerImageURI;
 import com.openshift.restclient.model.IProject;
 
 /**
@@ -46,4 +48,5 @@ public interface IDeployImagePageModel extends IConnectionAware<Connection>{
 	
 	String getImage();
 	void setImage(String image);
+	
 }
