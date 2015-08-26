@@ -11,6 +11,7 @@
 package org.jboss.tools.openshift.internal.ui.wizard.deployimage;
 
 import java.util.List;
+import java.util.Map;
 
 import com.openshift.restclient.model.IServicePort;
 
@@ -22,10 +23,20 @@ import com.openshift.restclient.model.IServicePort;
 public interface IServiceAndRoutingPageModel {
 
 	static final String PROPERTY_ADD_ROUTE = "addRoute";
+
+	String PROPERTY_SERVICE_PORTS = "servicePorts";
+	String PROPERTY_SELECTED_SERVICE_PORT = "selectedServicePort";
 	
 	boolean isAddRoute();
 	
 	void setAddRoute(boolean addRoute);
 	
 	List<IServicePort> getServicePorts();
+
+	void setSelectedServicePort(IServicePort servicePort);
+
+	IServicePort getSelectedServicePort();
+
+	void removeServicePort(IServicePort port);
+
 }

@@ -10,9 +10,12 @@
  ******************************************************************************/
 package org.jboss.tools.openshift.internal.ui.wizard.deployimage;
 
-import java.util.Map;
-
 import org.eclipse.core.databinding.DataBindingContext;
+import org.eclipse.core.databinding.beans.BeanProperties;
+import org.eclipse.core.databinding.conversion.Converter;
+import org.eclipse.jface.databinding.swt.WidgetProperties;
+import org.eclipse.jface.databinding.viewers.ViewerProperties;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -20,7 +23,11 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.jface.wizard.IWizardPage;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -28,9 +35,14 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
+import org.jboss.tools.common.ui.databinding.ValueBindingBuilder;
 import org.jboss.tools.openshift.internal.common.ui.utils.TableViewerBuilder;
+import org.jboss.tools.openshift.internal.common.ui.utils.UIUtils;
 import org.jboss.tools.openshift.internal.common.ui.utils.TableViewerBuilder.IColumnLabelProvider;
 import org.jboss.tools.openshift.internal.common.ui.wizard.AbstractOpenShiftWizardPage;
+import org.jboss.tools.openshift.internal.ui.wizard.common.IResourceLabelsPageModel;
+
+import com.openshift.restclient.model.IServicePort;
 
 /**
  * Page to configure OpenShift services and routes
@@ -43,6 +55,8 @@ public class ServicesAndRoutingPage extends AbstractOpenShiftWizardPage  {
 	private static final String PAGE_TITLE = "Services & Routing Settings";
 	private static final String PAGE_DESCRIPTION = "";
 	private IServiceAndRoutingPageModel model;
+
+	TableViewer portsViewer;
 	
 	protected ServicesAndRoutingPage(IWizard wizard, IServiceAndRoutingPageModel model) {
 		super(PAGE_TITLE, PAGE_DESCRIPTION, PAGE_NAME, wizard);
@@ -92,20 +106,20 @@ public class ServicesAndRoutingPage extends AbstractOpenShiftWizardPage  {
 			.applyTo(lblEnvVars);
 		Composite tableContainer = new Composite(envContainer, SWT.NONE);
 		
-		TableViewer envViewer = createTable(tableContainer);
+		portsViewer = createTable(tableContainer);
 		GridDataFactory.fillDefaults()
 			.span(1, 5).align(SWT.FILL, SWT.FILL).grab(true, true).applyTo(tableContainer);
-//		ValueBindingBuilder.bind(ViewerProperties.singleSelection().observe(envViewer))
-//				.to(BeanProperties.value(IResourceLabelsPageModel.PROPERTY_SELECTED_LABEL).observe(model))
-//				.in(dbc);
-//		envViewer.setContentProvider(new ObservableListContentProvider());
-//		envViewer.setInput(BeanProperties.list(
-//				IResourceLabelsPageModel.PROPERTY_LABELS).observe(model));
+		ValueBindingBuilder.bind(ViewerProperties.singleSelection().observe(portsViewer))
+				.to(BeanProperties.value(IServiceAndRoutingPageModel.PROPERTY_SERVICE_PORTS).observe(model))
+				.in(dbc);
+//		portsViewer.setContentProvider(new ObservableListContentProvider());
+		portsViewer.setInput(BeanProperties.list(
+				IServiceAndRoutingPageModel.PROPERTY_SERVICE_PORTS).observe(model));
 		
-		Button addButton = new Button(envContainer, SWT.PUSH);
-		GridDataFactory.fillDefaults()
-			.align(SWT.FILL, SWT.FILL).applyTo(addButton);
-		addButton.setText("Add...");
+//		Button addButton = new Button(envContainer, SWT.PUSH);
+//		GridDataFactory.fillDefaults()
+//			.align(SWT.FILL, SWT.FILL).applyTo(addButton);
+//		addButton.setText("Add...");
 //		addButton.addSelectionListener(onAdd());
 		
 		
@@ -113,32 +127,63 @@ public class ServicesAndRoutingPage extends AbstractOpenShiftWizardPage  {
 		GridDataFactory.fillDefaults()
 			.align(SWT.FILL, SWT.FILL).applyTo(removeButton);
 		removeButton.setText("Remove");
-//		removeButton.addSelectionListener(onRemove());
-//		ValueBindingBuilder
-//				.bind(WidgetProperties.enabled().observe(removeButton))
-//				.notUpdatingParticipant()
-//				.to(BeanProperties.value(IResourceLabelsPageModel.PROPERTY_SELECTED_LABEL).observe(model))
-//				.converting(new IsNotNullOrReadOnlyBooleanConverter())
-//				.in(dbc);
+		removeButton.addSelectionListener(onRemove());
+		ValueBindingBuilder
+				.bind(WidgetProperties.enabled().observe(removeButton))
+				.notUpdatingParticipant()
+				.to(BeanProperties.value(IServiceAndRoutingPageModel.PROPERTY_SELECTED_SERVICE_PORT).observe(model))
+				.converting(new IsNotNullOrReadOnlyBooleanConverter())
+				.in(dbc);
 		
 	}
 	
+	private class IsNotNullOrReadOnlyBooleanConverter extends Converter {
+
+		public IsNotNullOrReadOnlyBooleanConverter() {
+			super(IServicePort.class, Boolean.class);
+		}
+
+		@Override
+		public Object convert(Object arg) {
+			if(arg == null) return Boolean.FALSE;
+			IServicePort port = (IServicePort)arg;
+			//TODO check read only port
+			return Boolean.TRUE;
+		}
+		
+	}
 	protected TableViewer createTable(Composite tableContainer) {
 		Table table =
 				new Table(tableContainer, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
 		table.setLinesVisible(true);
 		table.setHeaderVisible(true);
-		TableViewer envViewer = new TableViewerBuilder(table, tableContainer)
+		TableViewer viewer = new TableViewerBuilder(table, tableContainer)
 				.contentProvider(new ArrayContentProvider())
-				.column(new IColumnLabelProvider<Integer>() {
+				.column(new IColumnLabelProvider<IServicePort>() {
 					@Override
-					public String getValue(Integer port) {
-						return port.toString();
+					public String getValue(IServicePort port) {
+						return "" + port.getPort();
 					}
 				})
 				.name("Container Port").align(SWT.LEFT).weight(2).minWidth(100).buildColumn()
 				.buildViewer();
 
-		return envViewer;
+		return viewer;
 	}
+
+	private SelectionListener onRemove() {
+		return new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				IServicePort port = UIUtils.getFirstElement(portsViewer.getSelection(), IServicePort.class);
+				if(MessageDialog.openQuestion(getShell(), "Remove port", NLS.bind("Are you sure you want to delete the port {0} ", port.getPort()))) {
+					model.removeServicePort(port);
+					portsViewer.refresh();
+				}
+			}
+			
+		};
+	}
+
 }

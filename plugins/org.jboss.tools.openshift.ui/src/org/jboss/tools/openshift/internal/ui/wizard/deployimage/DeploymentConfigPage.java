@@ -11,6 +11,7 @@
 package org.jboss.tools.openshift.internal.ui.wizard.deployimage;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.core.databinding.DataBindingContext;
 import org.eclipse.core.databinding.beans.BeanProperties;
@@ -18,6 +19,7 @@ import org.eclipse.core.databinding.conversion.Converter;
 import org.eclipse.jface.databinding.swt.WidgetProperties;
 import org.eclipse.jface.databinding.viewers.ObservableListContentProvider;
 import org.eclipse.jface.databinding.viewers.ViewerProperties;
+import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -46,9 +48,11 @@ import org.jboss.tools.openshift.internal.common.ui.wizard.IKeyValueWizardModel;
 import org.jboss.tools.openshift.internal.common.ui.wizard.KeyValueWizard;
 import org.jboss.tools.openshift.internal.common.ui.wizard.KeyValueWizardModelBuilder;
 import org.jboss.tools.openshift.internal.common.ui.wizard.OkCancelButtonWizardDialog;
-import org.jboss.tools.openshift.internal.ui.validator.LabelKeyValidator;
 import org.jboss.tools.openshift.internal.ui.validator.LabelValueValidator;
+import org.jboss.tools.openshift.internal.ui.wizard.common.IResourceLabelsPageModel;
 //import org.jboss.tools.openshift.internal.ui.wizard.newapp.IResourceLabelsPageModel.Label;
+
+import com.openshift.restclient.model.IServicePort;
 
 /**
  * Page to (mostly) edit the config items for a page
@@ -63,6 +67,7 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 
 	private IDeploymentConfigPageModel model;
 	private TableViewer envViewer;
+	private TableViewer dataViewer;
 
 	protected DeploymentConfigPage(IWizard wizard, IDeploymentConfigPageModel model) {
 		super(PAGE_TITLE, PAGE_DESCRIPTION, PAGE_NAME, wizard);
@@ -115,12 +120,12 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 		this.envViewer = createTable(tableContainer);
 		GridDataFactory.fillDefaults()
 			.span(1, 5).align(SWT.FILL, SWT.FILL).grab(true, true).applyTo(tableContainer);
-//		ValueBindingBuilder.bind(ViewerProperties.singleSelection().observe(envViewer))
-//				.to(BeanProperties.value(IResourceLabelsPageModel.PROPERTY_SELECTED_LABEL).observe(model))
-//				.in(dbc);
-//		envViewer.setContentProvider(new ObservableListContentProvider());
-//		envViewer.setInput(BeanProperties.list(
-//				IResourceLabelsPageModel.PROPERTY_LABELS).observe(model));
+		ValueBindingBuilder.bind(ViewerProperties.singleSelection().observe(envViewer))
+				.to(BeanProperties.value(IDeploymentConfigPageModel.PROPERTY_SELECTED_ENVIRONMENT_VARIABLE)
+						.observe(model))
+				.in(dbc);
+		envViewer.setInput(BeanProperties.map(
+				IDeploymentConfigPageModel.PROPERTY_ENVIRONMENT_VARIABLES).observe(model));
 		
 		Button addButton = new Button(envContainer, SWT.PUSH);
 		GridDataFactory.fillDefaults()
@@ -133,27 +138,43 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 			.align(SWT.FILL, SWT.FILL).applyTo(editExistingButton);
 		editExistingButton.setText("Edit...");
 		editExistingButton.addSelectionListener(onEdit());
-//		ValueBindingBuilder
-//				.bind(WidgetProperties.enabled().observe(editExistingButton))
-//				.notUpdatingParticipant()
-//				.to(BeanProperties.value(IResourceLabelsPageModel.PROPERTY_SELECTED_LABEL).observe(model))
-//				.converting(new IsNotNullOrReadOnlyBooleanConverter())
-//				.in(dbc);
+		ValueBindingBuilder
+				.bind(WidgetProperties.enabled().observe(editExistingButton))
+				.notUpdatingParticipant()
+				.to(BeanProperties.value(IDeploymentConfigPageModel.PROPERTY_SELECTED_ENVIRONMENT_VARIABLE).observe(model))
+				.converting(new IsNotNullOrReadOnlyEnvVarToBooleanConverter())
+				.in(dbc);
 		
 		Button removeButton = new Button(envContainer, SWT.PUSH);
 		GridDataFactory.fillDefaults()
 			.align(SWT.FILL, SWT.FILL).applyTo(removeButton);
 		removeButton.setText("Remove");
 		removeButton.addSelectionListener(onRemove());
-//		ValueBindingBuilder
-//				.bind(WidgetProperties.enabled().observe(removeButton))
-//				.notUpdatingParticipant()
-//				.to(BeanProperties.value(IResourceLabelsPageModel.PROPERTY_SELECTED_LABEL).observe(model))
-//				.converting(new IsNotNullOrReadOnlyBooleanConverter())
-//				.in(dbc);
+		ValueBindingBuilder
+				.bind(WidgetProperties.enabled().observe(removeButton))
+					.notUpdatingParticipant()
+						.to(BeanProperties.value(IDeploymentConfigPageModel.PROPERTY_SELECTED_ENVIRONMENT_VARIABLE).observe(model))
+				.converting(new IsNotNullOrReadOnlyEnvVarToBooleanConverter())
+							.in(dbc);
 		
 	}
 	
+	private class IsNotNullOrReadOnlyEnvVarToBooleanConverter extends Converter {
+
+		public IsNotNullOrReadOnlyEnvVarToBooleanConverter() {
+			super(IResourceLabelsPageModel.Label.class, Boolean.class);
+		}
+
+		@Override
+		public Object convert(Object arg) {
+			if(arg == null) return Boolean.FALSE;
+			IResourceLabelsPageModel.Label envVar = (IResourceLabelsPageModel.Label)arg;
+			//TODO check read only envVar
+			return Boolean.TRUE;
+		}
+		
+	}
+
 	private void createDataVolumeControl(Composite parent, DataBindingContext dbc) {
 		Composite sectionContainer = new Composite(parent, SWT.NONE);
 		GridDataFactory.fillDefaults()
@@ -169,84 +190,126 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 			.applyTo(lblSection);
 		Composite tableContainer = new Composite(sectionContainer, SWT.NONE);
 		
-		createDataVolumeTable(tableContainer);
+		dataViewer = createDataVolumeTable(tableContainer);
 		GridDataFactory.fillDefaults()
 			.span(1, 5).align(SWT.FILL, SWT.FILL).grab(true, true).applyTo(tableContainer);
-//		ValueBindingBuilder.bind(ViewerProperties.singleSelection().observe(envViewer))
-//				.to(BeanProperties.value(IResourceLabelsPageModel.PROPERTY_SELECTED_LABEL).observe(model))
-//				.in(dbc);
-//		envViewer.setContentProvider(new ObservableListContentProvider());
-//		envViewer.setInput(BeanProperties.list(
-//				IResourceLabelsPageModel.PROPERTY_LABELS).observe(model));
+		ValueBindingBuilder.bind(ViewerProperties.singleSelection().observe(dataViewer))
+		.to(BeanProperties.value(IDeploymentConfigPageModel.PROPERTY_SELECTED_VOLUME)
+				.observe(model));
+		dataViewer.setInput(BeanProperties.map(
+				IDeploymentConfigPageModel.PROPERTY_VOLUMES).observe(model));
 		
 		Button btnEdit = new Button(sectionContainer, SWT.PUSH);
 		GridDataFactory.fillDefaults()
 			.align(SWT.FILL, SWT.FILL).applyTo(btnEdit);
 		btnEdit.setText("Edit...");
-//		addButton.addSelectionListener(onAdd());
+		btnEdit.addSelectionListener(onEditVolume());
+		ValueBindingBuilder
+				.bind(WidgetProperties.enabled().observe(btnEdit))
+				.notUpdatingParticipant()
+				.to(BeanProperties.value(IDeploymentConfigPageModel.PROPERTY_SELECTED_VOLUME).observe(model))
+				.converting(new IsNotNullOrReadOnlyVolumeToBooleanConverter())
+				.in(dbc);
 		
 	}
 	
+	private class IsNotNullOrReadOnlyVolumeToBooleanConverter extends Converter {
+
+		public IsNotNullOrReadOnlyVolumeToBooleanConverter() {
+			super(String.class, Boolean.class);
+		}
+
+		@Override
+		public Object convert(Object arg) {
+			if(arg == null) return Boolean.FALSE;
+			String volume = (String)arg;
+			//TODO check read only volume
+			return Boolean.TRUE;
+		}
+		
+	}
+
 
 	private SelectionListener onRemove() {
 		return new SelectionAdapter() {
 
-//			@Override
-//			public void widgetSelected(SelectionEvent e) {
-//				Label label = UIUtils.getFirstElement(envViewer.getSelection(),Label.class);
-//				if(MessageDialog.openQuestion(getShell(), "Remove Label", NLS.bind("Are you sure you want to delete the label {0} ", label.getName()))) {
-//					model.removeLabel(label);
-//					envViewer.refresh();
-//				}
-//			}
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				IResourceLabelsPageModel.Label envVar = UIUtils.getFirstElement(envViewer.getSelection(), IResourceLabelsPageModel.Label.class);
+				if(MessageDialog.openQuestion(getShell(), "Remove " + ENVIRONMENT_VARIABLE_LABEL, 
+						NLS.bind("Are you sure you want to delete the {0} {1} ", ENVIRONMENT_VARIABLE_LABEL.toLowerCase(), envVar.getName()))) {
+					model.removeEnvironmentVariable(envVar);
+					envViewer.refresh();
+				}
+			}
 			
 		};
 	}
 
+	static final String ENVIRONMENT_VARIABLE_LABEL = "Environment Variable";
+
 	private SelectionListener onEdit() {
 		return new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected(SelectionEvent e) {
-//				final Label label = UIUtils.getFirstElement(envViewer.getSelection(),Label.class);
-//				IKeyValueWizardModel<Label> dialogModel = new KeyValueWizardModelBuilder<Label>(label)
-//						.windowTitle(RESOURCE_LABEL)
-//						.title("Edit Label")
-//						.description("Edit the resource label.")
-//						.keyLabel(LABEL)
-//						.groupLabel(LABEL)
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				IResourceLabelsPageModel.Label var = UIUtils.getFirstElement(envViewer.getSelection(), IResourceLabelsPageModel.Label.class);
+				IKeyValueWizardModel<IResourceLabelsPageModel.Label> dialogModel = new KeyValueWizardModelBuilder<IResourceLabelsPageModel.Label>(var)
+						.windowTitle(ENVIRONMENT_VARIABLE_LABEL)
+						.title("Edit " + ENVIRONMENT_VARIABLE_LABEL)
+						.description(NLS.bind("Edit the {0}.", ENVIRONMENT_VARIABLE_LABEL.toLowerCase()))
+						.keyLabel(ENVIRONMENT_VARIABLE_LABEL)
+						.groupLabel(ENVIRONMENT_VARIABLE_LABEL)
 //						.keyAfterConvertValidator(new LabelKeyValidator(model.getReadOnlyLabels()))
-//						.valueAfterConvertValidator(new LabelValueValidator())
-//						.build();
-//				OkCancelButtonWizardDialog dialog =
-//						new OkCancelButtonWizardDialog(getShell(),
-//								new KeyValueWizard<Label>(label, dialogModel));
-//				if(OkCancelButtonWizardDialog.OK == dialog.open()) {
-//					model.updateLabel(label, dialogModel.getKey(), dialogModel.getValue());
-//				}
-//			}
+						.valueAfterConvertValidator(new LabelValueValidator())
+						.build();
+				OkCancelButtonWizardDialog dialog =
+						new OkCancelButtonWizardDialog(getShell(),
+								new KeyValueWizard<IResourceLabelsPageModel.Label>(var, dialogModel));
+				if(OkCancelButtonWizardDialog.OK == dialog.open()) {
+					model.updateEnvironmentVariable(var, dialogModel.getKey(), dialogModel.getValue());
+				}
+			}
 		};
 	}
 
 	private SelectionListener onAdd() {
 		return new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected(SelectionEvent e) {
-//				IKeyValueWizardModel<Label> dialogModel = new KeyValueWizardModelBuilder<Label>()
-//						.windowTitle(RESOURCE_LABEL)
-//						.title("Add Label")
-//						.description("Add a resource label.")
-//						.keyLabel(LABEL)
-//						.groupLabel(LABEL)
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				IKeyValueWizardModel<IResourceLabelsPageModel.Label> dialogModel = new KeyValueWizardModelBuilder<IResourceLabelsPageModel.Label>()
+						.windowTitle(ENVIRONMENT_VARIABLE_LABEL)
+						.title("Add " + ENVIRONMENT_VARIABLE_LABEL)
+						.description(NLS.bind("Add an {0}.", ENVIRONMENT_VARIABLE_LABEL.toLowerCase()))
+						.keyLabel(ENVIRONMENT_VARIABLE_LABEL)
+						.groupLabel(ENVIRONMENT_VARIABLE_LABEL)
 //						.keyAfterConvertValidator(new LabelKeyValidator(model.getReadOnlyLabels()))
-//						.valueAfterConvertValidator(new LabelValueValidator())
-//						.build();
-//				OkCancelButtonWizardDialog dialog =
-//						new OkCancelButtonWizardDialog(getShell(),
-//								new KeyValueWizard<Label>(UIUtils.getFirstElement(envViewer.getSelection(),Label.class), dialogModel));
-//				if(OkCancelButtonWizardDialog.OK == dialog.open()) {
-//					model.addLabel(dialogModel.getKey(), dialogModel.getValue());
-//				}
-//			}
+						.valueAfterConvertValidator(new LabelValueValidator())
+						.build();
+				OkCancelButtonWizardDialog dialog =
+						new OkCancelButtonWizardDialog(getShell(),
+								new KeyValueWizard<IResourceLabelsPageModel.Label>(dialogModel));
+				if(OkCancelButtonWizardDialog.OK == dialog.open()) {
+					model.addEnvironmentVariable(dialogModel.getKey(), dialogModel.getValue());
+				}
+			}
+		};
+	}
+
+	private SelectionListener onEditVolume() {
+		return new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				String volume = UIUtils.getFirstElement(dataViewer.getSelection(), String.class);
+				InputDialog dialog = new InputDialog(getShell(), 
+						"Edit Data Volume", 
+						NLS.bind("Please enter a new value.", ""), 
+						volume, 
+						/*new RequiredValueInputValidator("Volume")*/ null) ;
+				if (InputDialog.OK == dialog.open()) {
+					model.updateVolume(volume, dialog.getValue());
+					dataViewer.refresh();
+				}
+			}
 		};
 	}
 
@@ -292,36 +355,27 @@ public class DeploymentConfigPage extends AbstractOpenShiftWizardPage {
 				new Table(tableContainer, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
 		table.setLinesVisible(true);
 		table.setHeaderVisible(true);
-		this.envViewer = new TableViewerBuilder(table, tableContainer)
+		this.dataViewer = new TableViewerBuilder(table, tableContainer)
 				.contentProvider(new ArrayContentProvider())
-				.column(new IColumnLabelProvider<Map.Entry<String, String>>() {
+				.column(new IColumnLabelProvider<String>() {
 					@Override
-					public String getValue(Map.Entry<String, String> label) {
-						return label.getKey();
+					public String getValue(String label) {
+						return label;
 					}
 				})
-				.name("Name").align(SWT.LEFT).weight(2).minWidth(100).buildColumn()
-				.column(new IColumnLabelProvider<Map.Entry<String, String>>() {
-					
-					@Override
-					public String getValue(Map.Entry<String, String> label) {
-						return label.getValue();
-					}
-					
-				})
-				.name("Value").align(SWT.LEFT).weight(2).minWidth(100).buildColumn()
+				.name("Container Path").align(SWT.LEFT).weight(2).minWidth(100).buildColumn()
 				.buildViewer();
-//		envViewer.setComparator(new ViewerComparator() {
-//
-//			@Override
-//			public int compare(Viewer viewer, Object e1, Object e2) {
-//				Label first = (Label) e1;
-//				Label other = (Label) e2;
-//				return first.getName().compareTo(other.getName());
-//			}
-//			
-//		});
-		return envViewer;
+		dataViewer.setComparator(new ViewerComparator() {
+
+			@Override
+			public int compare(Viewer viewer, Object e1, Object e2) {
+				String first = (String) e1;
+				String other = (String) e2;
+				return first.compareTo(other);
+			}
+			
+		});
+		return dataViewer;
 	}
 	
 //	/*

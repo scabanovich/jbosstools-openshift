@@ -10,10 +10,15 @@
  ******************************************************************************/
 package org.jboss.tools.openshift.internal.ui.wizard.deployimage;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.jboss.tools.common.databinding.ObservablePojo;
@@ -22,6 +27,7 @@ import org.jboss.tools.openshift.core.connection.Connection;
 import org.jboss.tools.openshift.internal.common.ui.wizard.IConnectionAware;
 import org.jboss.tools.openshift.internal.ui.wizard.common.IResourceLabelsPageModel;
 import org.jboss.tools.openshift.internal.ui.wizard.common.ResourceLabelsPageModel;
+import org.jboss.tools.openshift.internal.ui.wizard.common.IResourceLabelsPageModel.Label;
 
 import com.openshift.restclient.ResourceKind;
 import com.openshift.restclient.model.IProject;
@@ -41,6 +47,21 @@ public class DeployImageWizardModel
 	private String name;
 	private String image;
 	private Collection<IProject> projects = Collections.emptyList();
+
+	private List<Label> environmentVariables = new ArrayList<Label>();
+	private Label selectedEnvironmentVariable = null;
+
+	private Set<String> volumes = new HashSet<String>();
+	private String selectedVolume;
+
+	private Set<String> portSpecs = new HashSet<String>();
+
+	private int replicas;
+
+	private boolean addRoute = false;
+
+	List<IServicePort> servicePorts = new ArrayList<IServicePort>();
+	IServicePort selectedServicePort = null;
 	
 	public DeployImageWizardModel() {
 		setConnection(ConnectionsRegistrySingleton.getInstance().getRecentConnection(Connection.class));
@@ -110,51 +131,51 @@ public class DeployImageWizardModel
 	}
 
 	@Override
-	public Map<String, String> getEnvironmentVariables() {
-		// TODO Auto-generated method stub
-		return null;
+	public List<Label> getEnvironmentVariables() {
+		return environmentVariables;
 	}
 
 	@Override
-	public void setEnvironmentVariables(Map<String, String> envVars) {
-		// TODO Auto-generated method stub
-		
+	public void setEnvironmentVariables(List<Label> envVars) {
+		firePropertyChange(PROPERTY_ENVIRONMENT_VARIABLES, 
+				this.environmentVariables, 
+				this.environmentVariables = envVars);
 	}
 
 	@Override
-	public void setVolumes(Map<String, String> volumes) {
-		// TODO Auto-generated method stub
-		
+	public void setVolumes(Set<String> volumes) {
+		firePropertyChange(PROPERTY_VOLUMES, 
+				this.volumes, 
+				this.volumes = volumes);
 	}
 
 	@Override
-	public Map<String, String> getVolumes() {
-		// TODO Auto-generated method stub
-		return null;
+	public Set<String> getVolumes() {
+		return volumes;
 	}
 
 	@Override
 	public void setPortSpecs(Set<String> portSpecs) {
-		// TODO Auto-generated method stub
-		
+		firePropertyChange(PROPERTY_PORT_SPECS, 
+				this.portSpecs, 
+				this.portSpecs = portSpecs);
 	}
 
 	@Override
 	public Set<String> getPortSpecs() {
-		// TODO Auto-generated method stub
-		return null;
+		return portSpecs;
 	}
 
 	@Override
 	public int getReplicas() {
-		// TODO Auto-generated method stub
-		return 0;
+		return replicas;
 	}
 
 	@Override
 	public void setReplicas(int replicas) {
-		// TODO Auto-generated method stub
-		
+		firePropertyChange(PROPERTY_REPLICAS, 
+				this.replicas, 
+				this.replicas = replicas);
 	}
 
 	@Override
@@ -170,21 +191,100 @@ public class DeployImageWizardModel
 
 	@Override
 	public boolean isAddRoute() {
-		// TODO Auto-generated method stub
-		return false;
+		return addRoute;
 	}
 
 	@Override
 	public void setAddRoute(boolean addRoute) {
-		// TODO Auto-generated method stub
-		
+		firePropertyChange(PROPERTY_ADD_ROUTE, 
+				this.addRoute, 
+				this.addRoute = addRoute);
 	}
 
 	@Override
 	public List<IServicePort> getServicePorts() {
-		return null;
+		return servicePorts;
 	}
+
+	@Override
+	public void setSelectedEnvironmentVariable(Label envVar) {
+		firePropertyChange(PROPERTY_SELECTED_ENVIRONMENT_VARIABLE, 
+				this.selectedEnvironmentVariable, 
+				this.selectedEnvironmentVariable = envVar);
+	}
+
+	@Override
+	public Label getSelectedEnvironmentVariable() {
+		return selectedEnvironmentVariable;
+	}
+
+	@Override
+	public void removeEnvironmentVariable(Label envVar) {
+		List<Label> old = new ArrayList<Label>(environmentVariables);
+		int index = environmentVariables.indexOf(envVar);
+		if(index > -1) {
+			this.environmentVariables.remove(envVar);
+			fireIndexedPropertyChange(PROPERTY_ENVIRONMENT_VARIABLES, index, old, Collections.unmodifiableList(environmentVariables));
+		}
+	}
+
+	@Override
+	public void updateEnvironmentVariable(Label envVar, String key, String value) {
+		List<Label> old = new ArrayList<Label>(environmentVariables);
+		int index = environmentVariables.indexOf(envVar);
+		if(index > -1) {
+			Label changed = environmentVariables.get(index);
+			changed.setName(key);
+			changed.setValue(value);
+			fireIndexedPropertyChange(PROPERTY_ENVIRONMENT_VARIABLES, index, old, Collections.unmodifiableList(environmentVariables));
+		}
+	}	
 	
-	
+	@Override
+	public void addEnvironmentVariable(String key, String value) {
+		List<Label> old = new ArrayList<Label>(environmentVariables);
+		this.environmentVariables.add(new Label(key, value));
+		fireIndexedPropertyChange(PROPERTY_ENVIRONMENT_VARIABLES, this.environmentVariables.size(), old, Collections.unmodifiableList(environmentVariables));
+	}
+
+	@Override
+	public void setSelectedVolume(String volume) {
+		firePropertyChange(PROPERTY_SELECTED_VOLUME, 
+				this.selectedVolume, 
+				this.selectedVolume = volume);
+	}
+
+	@Override
+	public String getSelectedVolume() {
+		return selectedVolume;
+	}
+
+	@Override
+	public void updateVolume(String volume, String value) {
+		Set<String> old = new LinkedHashSet<String>(volumes);
+		this.volumes.remove(volume);
+		this.volumes.add(value);
+		firePropertyChange(PROPERTY_VOLUMES, old, Collections.unmodifiableSet(volumes));
+	}
+
+	@Override
+	public void setSelectedServicePort(IServicePort servicePort) {
+		firePropertyChange(PROPERTY_SELECTED_SERVICE_PORT, 
+				this.selectedServicePort, 
+				this.selectedServicePort = servicePort);
+	}
+
+	@Override
+	public IServicePort getSelectedServicePort() {
+		return selectedServicePort;
+	}
+
+	@Override
+	public void removeServicePort(IServicePort port) {
+		List<IServicePort> old = new ArrayList<IServicePort>(servicePorts);
+		int index = servicePorts.indexOf(port);
+		this.servicePorts.remove(port);
+		fireIndexedPropertyChange(PROPERTY_SERVICE_PORTS, index, old, Collections.unmodifiableList(servicePorts));
+	}
 
 }

@@ -10,8 +10,10 @@
  ******************************************************************************/
 package org.jboss.tools.openshift.internal.ui.wizard.deployimage;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
+
+import org.jboss.tools.openshift.internal.ui.wizard.common.IResourceLabelsPageModel;
 
 /**
  * Page model for the deployment config page
@@ -19,14 +21,24 @@ import java.util.Set;
  *
  */
 public interface IDeploymentConfigPageModel {
+	String PROPERTY_ENVIRONMENT_VARIABLES = "environmentVariables";
+	String PROPERTY_SELECTED_ENVIRONMENT_VARIABLE = "selectedEnvironmentVariable";
 
-	Map<String, String> getEnvironmentVariables();
+	String PROPERTY_VOLUMES = "volumes";
+	String PROPERTY_SELECTED_VOLUME = "selectedVolume";
+
+	String PROPERTY_PORT_SPECS = "portSpecs";
+
+	String PROPERTY_REPLICAS = "replicas";
+
+
+	List<IResourceLabelsPageModel.Label> getEnvironmentVariables();
 	
-	void setEnvironmentVariables(Map<String, String> envVars);
+	void setEnvironmentVariables(List<IResourceLabelsPageModel.Label> envVars);
 	
-	void setVolumes(Map<String, String> volumes);
+	void setVolumes(Set<String> volumes);
 	
-	Map<String, String> getVolumes();
+	Set<String> getVolumes();
 	
 	void setPortSpecs(Set<String> portSpecs);
 	
@@ -46,5 +58,22 @@ public interface IDeploymentConfigPageModel {
 	 * @param replicas  a number of 1 or more replicas
 	 */
 	void setReplicas(int replicas);
+
+	void setSelectedEnvironmentVariable(IResourceLabelsPageModel.Label envVar);
+
+	IResourceLabelsPageModel.Label getSelectedEnvironmentVariable();
+
+	void removeEnvironmentVariable(IResourceLabelsPageModel.Label envVar);
 	
+	void updateEnvironmentVariable(IResourceLabelsPageModel.Label envVar, String key, String value);
+
+	void addEnvironmentVariable(String key, String value);
+
+	void setSelectedVolume(String volume);
+
+	String getSelectedVolume();
+
+	void updateVolume(String volume, String value);
+
+
 }
