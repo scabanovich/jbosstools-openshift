@@ -208,10 +208,26 @@ public class PortForwardingWizardModel extends ObservablePojo {
 			MessageConsoleStream stream = console.newMessageStream();
 			stream.println("Stopping port-forwarding...");
 			cap.stop();
+			//Wait up to 5 seconds until the forcibly destroyed process really dies.
+			for (int i = 0; i < 50 && hasPortInUse(); i++) {
+				if(i % 10 == 0) {
+					//report once a second;
+					stream.println("Waiting for port-forwarding to stop...");
+				}
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
 			for (IPortForwardable.PortPair port : ports) {
 				stream.println(NLS.bind("{0} {1} -> {2}", new Object [] {port.getName(), port.getLocalPort(), port.getRemotePort()}));
 			}
-			stream.println("done.");
+			if(!hasPortInUse()) {
+				stream.println("done.");
+			} else {
+				stream.println("Ports remain in use yet. Stopping ports is requested and eventually will be completed.");
+			}
 			ConsoleUtils.displayConsoleView(console);
 			firePropertyChange(PROPERTY_PORT_FORWARDING, true, getPortForwarding());
 			updatePortForwardingAllowed();
